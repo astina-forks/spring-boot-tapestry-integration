@@ -50,9 +50,9 @@
     <properties>
 
         <!-- DEPENDENCIES -->
-        <spring-boot.version>2.1.3.RELEASE</spring-boot.version>
-        <tapestry.version>5.5.0-beta-2</tapestry.version>
-        <servlet-api.version>3.1.0</servlet-api.version>
+        <spring-boot.version>2.6.13</spring-boot.version>
+        <tapestry.version>5.8.2</tapestry.version>
+        <servlet-api.version>4.0.0</servlet-api.version>
         <commons-io.version>2.6</commons-io.version>
         <jsoup.version>1.11.3</jsoup.version>
 
@@ -105,6 +105,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.vintage</groupId>
+            <artifactId>junit-vintage-engine</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

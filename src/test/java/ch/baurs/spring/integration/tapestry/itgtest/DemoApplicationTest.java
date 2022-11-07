@@ -2,7 +2,7 @@ package ch.baurs.spring.integration.tapestry.itgtest;
 
 import ch.baurs.spring.integration.tapestry.itgtest.services.TestService;
 import org.apache.commons.io.IOUtils;
-import org.apache.tapestry5.services.RequestGlobals;
+import org.apache.tapestry5.http.services.RequestGlobals;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
