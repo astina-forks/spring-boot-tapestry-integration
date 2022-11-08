@@ -1,0 +1,10 @@
+{
+  "properties": [
+    {
+      "name": "spring.tapestry.filter-name",
+      "type": "java.lang.String",
+      "description": "The name of the Tapestry filter determines the name of the application module class to search for. Usually, this is set in web.xml.",
+      "defaultValue": "app"
+    }
+  ]
+}

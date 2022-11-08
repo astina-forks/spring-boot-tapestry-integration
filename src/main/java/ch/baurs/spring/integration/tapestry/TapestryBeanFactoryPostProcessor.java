@@ -3,11 +3,13 @@ package ch.baurs.spring.integration.tapestry;
 import org.apache.tapestry5.SymbolConstants;
 import org.apache.tapestry5.http.internal.SingleKeySymbolProvider;
 import org.apache.tapestry5.http.internal.TapestryAppInitializer;
+import org.apache.tapestry5.http.internal.TapestryHttpInternalConstants;
 import org.apache.tapestry5.http.internal.util.DelegatingSymbolProvider;
-import org.apache.tapestry5.internal.InternalConstants;
 import org.apache.tapestry5.ioc.Registry;
+import org.apache.tapestry5.ioc.internal.services.SystemPropertiesSymbolProvider;
 import org.apache.tapestry5.ioc.services.ServiceActivityScoreboard;
 import org.apache.tapestry5.ioc.services.SymbolProvider;
+import org.apache.tapestry5.modules.TapestryModule;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -16,20 +18,12 @@ import org.springframework.boot.web.servlet.context.AnnotationConfigServletWebSe
 import org.springframework.context.annotation.ClassPathBeanDefinitionScanner;
 import org.springframework.core.Ordered;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.Environment;
-import org.springframework.core.env.MapPropertySource;
 import org.springframework.util.StringUtils;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Post-processor that orchestrates the whole integration
  */
 public class TapestryBeanFactoryPostProcessor implements BeanFactoryPostProcessor, Ordered {
-
-    public static final String SPRING_CONTEXT_PATH = "server.servlet.context-path";
-    public static final String PROPERTY_APPMODULE = "spring.tapestry.integration.appmodule";
 
     protected final AnnotationConfigServletWebServerApplicationContext applicationContext;
 
@@ -43,11 +37,11 @@ public class TapestryBeanFactoryPostProcessor implements BeanFactoryPostProcesso
 
     @Override
     public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-        String appModuleClass = findAppModuleClass(applicationContext.getEnvironment());
-        String filterName = appModuleClass.substring(appModuleClass.lastIndexOf('.') + 1).replace("Module", "");
-        SymbolProvider combinedProvider = setupTapestryContext(appModuleClass, filterName);
+        String filterName = applicationContext.getEnvironment().getProperty(ConfigurationConstants.TAPESTRY_FILTER_NAME, ConfigurationConstants.TAPESTRY_FILTER_NAME_DEFAULT_VALUE);
+        SymbolProvider combinedProvider = setupTapestryContext();
         String executionMode = combinedProvider.valueForSymbol(SymbolConstants.EXECUTION_MODE);
-        LogHelper.info("TB: About to start Tapestry app module: {}, filterName: {}, executionMode: {} ", appModuleClass, filterName, executionMode);
+        String appModule = findAppModuleClass(filterName, combinedProvider);
+        LogHelper.info("TB: About to start Tapestry app {}, executionMode: {} ", appModule, executionMode);
         appInitializer = new TapestryAppInitializer(LogHelper.LOG, combinedProvider, filterName, executionMode);
         appInitializer.addModules(new SpringModuleDef(applicationContext));
         appInitializer.addModules(TapestryModule.class);
@@ -57,7 +51,7 @@ public class TapestryBeanFactoryPostProcessor implements BeanFactoryPostProcesso
         beanFactory.addBeanPostProcessor(new TapestryFilterPostProcessor());
 
         registerTapestryServices(applicationContext.getBeanFactory(),
-                combinedProvider.valueForSymbol(InternalConstants.TAPESTRY_APP_PACKAGE_PARAM) + ".services",
+                servicesPackage(combinedProvider.valueForSymbol(TapestryHttpInternalConstants.TAPESTRY_APP_PACKAGE_PARAM)),
                 registry);
 
         // This will scan and find TapestryFilter which in turn will be post
@@ -88,42 +82,50 @@ public class TapestryBeanFactoryPostProcessor implements BeanFactoryPostProcesso
 
     }
 
-    protected SymbolProvider setupTapestryContext(String appModuleClass, String filterName) {
+    protected SymbolProvider setupTapestryContext() {
         ConfigurableEnvironment environment = applicationContext.getEnvironment();
-        Map<String, Object> tapestryContext = new HashMap<>();
-
-        tapestryContext.put("tapestry.filter-name", filterName);
 
         //read contextPath from two possible properties
-        String servletContextPath = environment.getProperty(SymbolConstants.CONTEXT_PATH, environment.getProperty(SPRING_CONTEXT_PATH, ""));
-        tapestryContext.put(SymbolConstants.CONTEXT_PATH, servletContextPath);
-
-        String executionMode = environment.getProperty(SymbolConstants.EXECUTION_MODE, "production");
-        tapestryContext.put(SymbolConstants.EXECUTION_MODE, executionMode);
-
-        String rootPackageName = appModuleClass.substring(0, appModuleClass.lastIndexOf('.')).replace(".services", "");
-        tapestryContext.put(InternalConstants.TAPESTRY_APP_PACKAGE_PARAM, rootPackageName);
-
-        environment.getPropertySources().addFirst(new MapPropertySource("tapestry-context", tapestryContext));
+        String servletContextPath = environment.getProperty(SymbolConstants.CONTEXT_PATH, environment.getProperty(ConfigurationConstants.SPRING_CONTEXT_PATH, ""));
 
         return new DelegatingSymbolProvider(
-                new ApplicationContextSymbolProvider(applicationContext),
+                new SystemPropertiesSymbolProvider(),
                 new SingleKeySymbolProvider(SymbolConstants.CONTEXT_PATH, servletContextPath),
-                new SingleKeySymbolProvider(InternalConstants.TAPESTRY_APP_PACKAGE_PARAM, rootPackageName),
-                new SingleKeySymbolProvider(SymbolConstants.EXECUTION_MODE, executionMode)
+                new ApplicationContextSymbolProvider(applicationContext),
+                new SingleKeySymbolProvider(SymbolConstants.EXECUTION_MODE, "production")
         );
     }
 
-    protected String findAppModuleClass(Environment environment) {
-        String appModuleClassName = environment.getProperty(PROPERTY_APPMODULE, "");
+    protected String findAppModuleClass(String filterName, SymbolProvider combinedProvider) {
+        String appPackage = combinedProvider.valueForSymbol(TapestryHttpInternalConstants.TAPESTRY_APP_PACKAGE_PARAM);
 
-        if (StringUtils.isEmpty(appModuleClassName)) {
-            String message = String.format("Tapestry AppModule not found. Set the property '%s=<fqdn.of.AppModule>' in your environment (e.g. application.properties)", PROPERTY_APPMODULE);
+        /* From the Tapestry docs:
+         *
+         * > Tapestry looks for your application module class in the services package (under the root package) of your
+         * > application. It capitalizes the <filter-name> and appends "Module". In the previous example, because the
+         * > filter name was "app" and the application's root package name is "org.example.myapp", the module class
+         * > would be org.example.myapp.services.AppModule.
+         *
+         * > If such a class exists, it is added to the IoC Registry. It is not an error for your application to not
+         * > have a module class, though any non-trivial application will have one.
+         *
+         * We're assuming that we have a non-trivial application!
+         */
+        String appModuleClassName = servicesPackage(appPackage) + "." + StringUtils.capitalize(filterName) + "Module";
+
+        try {
+            Class.forName(appModuleClassName);
+        } catch (ClassNotFoundException e) {
+            String message = String.format("Tapestry application module not found. Check the properties '%s' ('%s') and '%s' ('%s') in your environment (e.g. application.properties)", TapestryHttpInternalConstants.TAPESTRY_APP_PACKAGE_PARAM, appPackage, ConfigurationConstants.TAPESTRY_FILTER_NAME, filterName);
             throw new IllegalStateException(message);
         }
         LogHelper.info("Found Tapestry AppModule class: {} ", appModuleClassName);
 
         return appModuleClassName;
+    }
+
+    protected String servicesPackage(String appPackage) {
+        return (StringUtils.hasText(appPackage) ? appPackage + "." : "") + "services";
     }
 
     protected void registerTapestryServices(ConfigurableListableBeanFactory beanFactory, String servicesPackage,
