@@ -1,12 +1,19 @@
 package ch.baurs.spring.integration.tapestry;
 
-import org.apache.tapestry5.internal.AbstractContributionDef;
-import org.apache.tapestry5.ioc.*;
+import org.apache.tapestry5.annotations.Service;
+import org.apache.tapestry5.commons.AnnotationProvider;
+import org.apache.tapestry5.commons.ObjectLocator;
+import org.apache.tapestry5.commons.ObjectProvider;
+import org.apache.tapestry5.commons.OrderedConfiguration;
+import org.apache.tapestry5.commons.util.CollectionFactory;
+import org.apache.tapestry5.http.internal.AbstractContributionDef;
+import org.apache.tapestry5.ioc.ModuleBuilderSource;
+import org.apache.tapestry5.ioc.OperationTracker;
+import org.apache.tapestry5.ioc.ServiceResources;
 import org.apache.tapestry5.ioc.def.ContributionDef;
 import org.apache.tapestry5.ioc.def.DecoratorDef;
 import org.apache.tapestry5.ioc.def.ModuleDef;
 import org.apache.tapestry5.ioc.def.ServiceDef;
-import org.apache.tapestry5.ioc.internal.util.CollectionFactory;
 import org.apache.tapestry5.ioc.internal.util.InternalUtils;
 import org.apache.tapestry5.plastic.PlasticUtils;
 import org.springframework.context.ApplicationContext;
@@ -71,7 +78,13 @@ public class SpringModuleDef implements ModuleDef {
                     @Override
                     public <T> T provide(Class<T> objectType, AnnotationProvider annotationProvider, ObjectLocator locator) {
 
-                        Map beanMap = applicationContext.getBeansOfType(objectType);
+                        String name = beanName(annotationProvider);
+
+                        if (name != null) {
+                            return objectType.cast(applicationContext.getBean(name, objectType));
+                        }
+
+                        Map<String, T> beanMap = applicationContext.getBeansOfType(objectType);
 
                         switch (beanMap.size()) {
                             case 0:
@@ -87,11 +100,20 @@ public class SpringModuleDef implements ModuleDef {
 
                                 String message = String
                                         .format(
-                                                "Spring context contains %d beans assignable to type %s: %s.",
+                                                "Spring context contains %d beans assignable to type %s: %s. Please qualify the bean to inject via @Service or @InjectService.",
                                                 beanMap.size(), PlasticUtils.toTypeName(objectType), InternalUtils.joinSorted(beanMap.keySet()));
 
                                 throw new IllegalArgumentException(message);
                         }
+                    }
+
+                    private String beanName(AnnotationProvider annotationProvider)
+                    {
+                        Service ann = annotationProvider.getAnnotation(Service.class);
+                        if (ann != null) {
+                            return ann.value();
+                        }
+                        return null;
                     }
                 };
 
