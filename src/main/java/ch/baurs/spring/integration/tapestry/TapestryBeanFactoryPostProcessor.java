@@ -50,7 +50,7 @@ public class TapestryBeanFactoryPostProcessor implements BeanFactoryPostProcesso
         LogHelper.info("TB: About to start Tapestry app module: {}, filterName: {}, executionMode: {} ", appModuleClass, filterName, executionMode);
         appInitializer = new TapestryAppInitializer(LogHelper.LOG, combinedProvider, filterName, executionMode);
         appInitializer.addModules(new SpringModuleDef(applicationContext));
-        appInitializer.addModules(AssetSourceModule.class);
+        appInitializer.addModules(TapestryModule.class);
         LogHelper.info("TB: creating tapestry registry");
         registry = appInitializer.createRegistry();
 

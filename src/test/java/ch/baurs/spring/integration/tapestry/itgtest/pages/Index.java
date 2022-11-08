@@ -4,7 +4,7 @@ import org.apache.tapestry5.annotations.Import;
 
 @Import(
         stylesheet = {
-                "context:test-styles.css"
+                "test-styles.css"
         }
 )
 public class Index {
