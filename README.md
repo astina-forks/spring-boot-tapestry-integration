@@ -39,10 +39,10 @@ spring:
             <dependency>
                 <groupId>ch.baurs</groupId>
                 <artifactId>spring-boot-tapestry-integration</artifactId>
-                <version>0.9.3</version>
+                <version>0.10.x</version>
             </dependency>
 
-2. Define spring.tapestry.integration.appmodule in your application.properties
+2. Add Tapestry configuration to your application.properties
 
 ## Features
  - bootstraps tapestry framework inside embedded servlet container managed by spring-boot
