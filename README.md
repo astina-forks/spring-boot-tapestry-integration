@@ -1,11 +1,13 @@
 # Spring Boot - Tapestry integration
 
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/ch.baurs/spring-boot-tapestry-integration/badge.svg?subject=Maven%20Central)](https://maven-badges.herokuapp.com/maven-central/ch.baurs/spring-boot-tapestry-integration/)
-[![License](https://img.shields.io/github/license/sniffertine/spring-boot-tapestry-integration.svg?color=blue&label=License)]()
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/astina-forks/spring-boot-tapestry-integration/badge.svg?subject=Maven%20Central)](https://maven-badges.herokuapp.com/maven-central/ch.baurs/spring-boot-tapestry-integration/)
+[![License](https://img.shields.io/github/license/astina-forks/spring-boot-tapestry-integration.svg?color=blue&label=License)]()
 
 A simple integration module for Tapestry 5.7.x into Spring Boot
 
 Originally copied from <https://github.com/code8/tapestry-boot> and refactored.
+
+This fork is based on <https://github.com/sniffertine/spring-boot-tapestry-integration>. 
 
 To use `spring-boot-tapestry-integration`:
 1. create a `@SpringBootApplication` class
@@ -37,7 +39,7 @@ spring:
 1. Add the dependency (use the newest version from Maven Central)
 
             <dependency>
-                <groupId>ch.baurs</groupId>
+                <groupId>ch.astina</groupId>
                 <artifactId>spring-boot-tapestry-integration</artifactId>
                 <version>0.10.x</version>
             </dependency>
