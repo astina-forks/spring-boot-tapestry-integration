@@ -52,7 +52,6 @@
         <!-- DEPENDENCIES -->
         <spring-boot.version>2.6.13</spring-boot.version>
         <tapestry.version>5.8.2</tapestry.version>
-        <servlet-api.version>4.0.0</servlet-api.version>
         <commons-io.version>2.6</commons-io.version>
         <jsoup.version>1.11.3</jsoup.version>
 
@@ -152,13 +151,6 @@
                 <groupId>org.apache.tapestry</groupId>
                 <artifactId>tapestry-core</artifactId>
                 <version>${tapestry.version}</version>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>javax.servlet-api</artifactId>
-                <version>${servlet-api.version}</version>
-                <scope>provided</scope>
             </dependency>
 
         </dependencies>
